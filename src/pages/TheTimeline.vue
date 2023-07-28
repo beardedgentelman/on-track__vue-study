@@ -1,39 +1,47 @@
 <script setup>
 import TimelineItem from '../components/TimelineItem.vue'
-import {
-  isActivityValid,
-  isNull,
-  isTimelineItemValid,
-  validateActivities,
-  validateSelectOptions,
-  validateTimelineItems
-} from '../validators/validators'
+import { isPageValid, validateTimelineItems } from '../validators/validators'
+import { nextTick, ref, watchPostEffect } from 'vue'
+import { MIDNIGHT_HOUR, PAGE_TIMELINE } from '../constants/constants'
 
-defineProps({
+const props = defineProps({
   timelineItems: {
     required: true,
     type: Array,
     validator: validateTimelineItems
   },
-  activities: {
+  currentPage: {
     required: true,
-    type: Array,
-    validator: validateActivities
-  },
-  activitySelectOptions: {
-    required: true,
-    type: Array,
-    validator: validateSelectOptions
+    type: String,
+    validators: isPageValid
   }
 })
 
-const emit = defineEmits({
-  setTimelineItemActivity({ timelineItem, activity }) {
-    return [isTimelineItemValid(timelineItem), isNull(activity) || isActivityValid(activity)].every(
-      Boolean
-    )
+defineExpose({ scrollToHour })
+
+const timelineItemRefs = ref([])
+
+watchPostEffect(async () => {
+  if (props.currentPage === PAGE_TIMELINE) {
+    await nextTick()
+
+    scrollToHour(null, false)
   }
 })
+
+function scrollToHour(hour = null, isSmooth = true) {
+  hour ??= new Date().getHours()
+
+  const options = {
+    behavior: isSmooth ? 'smooth' : 'instant'
+  }
+
+  if (hour === MIDNIGHT_HOUR) {
+    document.body.scrollIntoView()
+  } else {
+    timelineItemRefs.value[hour - 1].$el.scrollIntoView(options)
+  }
+}
 </script>
 
 <template>
@@ -43,9 +51,8 @@ const emit = defineEmits({
         v-for="timelineItem in timelineItems"
         :key="timelineItem.hour"
         :timeline-item="timelineItem"
-        :activities="activities"
-        :activity-select-options="activitySelectOptions"
-        @select-activity="emit('setTimelineItemActivity', { timelineItem, activity: $event })"
+        ref="timelineItemRefs"
+        @scroll-to-hour="scrollToHour"
       />
     </ul>
   </div>

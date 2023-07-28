@@ -41,6 +41,9 @@ export function isNumberOrNull(value) {
 }
 
 export function isActivityValid({ id, name, secondsToComplete }) {
+  if (isNull(id)) {
+    return true
+  }
   return [isNotEmptyString(id), isNotEmptyString(name), isNumber(secondsToComplete)].every(Boolean)
 }
 
@@ -50,6 +53,10 @@ export function validateActivities(activities) {
 
 export function isNull(value) {
   return value === null
+}
+
+export function isNumber(value) {
+  return typeof value === 'number'
 }
 
 function isNotEmptyString(value) {
@@ -62,10 +69,6 @@ function isSelectOptionValid({ value, label }) {
 
 function isBetween(value, start, end) {
   return value >= start && value <= end
-}
-
-function isNumber(value) {
-  return typeof value === 'number'
 }
 
 function isString(value) {
