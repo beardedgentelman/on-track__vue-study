@@ -5,11 +5,12 @@ import {
   BTN_TYPE_WARNING,
   MILLISECONDS_IN_SECOND
 } from '../constants/constants'
+import { inject, ref } from 'vue'
 import { ArrowPathIcon, PauseIcon, PlayIcon } from '@heroicons/vue/24/outline'
 import { isTimelineItemValid } from '../validators/validators'
-import { inject, ref } from 'vue'
+import { currentHour, formatSecond } from '../helpers/helpers'
+import { updateTimelineItemActivitySecondsKey } from '../keys/keys'
 import BaseBtn from './BaseBtn.vue'
-import { formatSecond } from '../helpers/helpers'
 
 const props = defineProps({
   timelineItem: {
@@ -19,12 +20,12 @@ const props = defineProps({
   }
 })
 
-const updateTimelineItemActivitySeconds = inject('updateTimelineItemActivitySeconds')
+const updateTimelineItemActivitySeconds = inject(updateTimelineItemActivitySecondsKey)
 
 const seconds = ref(props.timelineItem.activitySeconds)
 const isRunning = ref(false)
 
-const isStartBtnDisabled = props.timelineItem.hour !== new Date().getHours()
+const isStartBtnDisabled = props.timelineItem.hour !== currentHour()
 
 function start() {
   isRunning.value = setInterval(() => {

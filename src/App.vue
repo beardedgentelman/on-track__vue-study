@@ -1,89 +1,48 @@
 <script setup>
+import { provide, readonly } from 'vue'
+import { PAGE_ACTIVITIES, PAGE_PROGRESS, PAGE_TIMELINE } from './constants/constants'
+import { generatePeriodSelectOptions } from './helpers/helpers'
+import { currentPage, timelineRef } from './router/router'
 import TheHeader from './components/TheHeader.vue'
 import TheNav from './components/TheNav.vue'
 import TheTimeline from './pages/TheTimeline.vue'
 import TheActivities from './pages/TheActivities.vue'
 import TheProgress from './pages/TheProgress.vue'
-import { PAGE_ACTIVITIES, PAGE_PROGRESS, PAGE_TIMELINE } from './constants/constants'
-import { computed, provide, ref } from 'vue'
+import * as keys from './keys/keys'
 import {
-  generateActivities,
-  generateActivitySelectOptions,
-  generatePeriodSelectOptions,
-  generateTimelineItems,
-  normalizePageHash
-} from './helpers/helpers'
-import ActivitySecondsToComplete from './components/ActivitySecondsToComplete.vue'
+  activitySelectOptions,
+  createActivity,
+  deleteActivity,
+  setActivitySecondsToComplete
+} from './helpers/activities'
+import {
+  resetTimelineItemActivities,
+  setTimelineItemActivity,
+  updateTimelineItemActivitySeconds
+} from './helpers/timeline-items'
 
-const currentPage = ref(normalizePageHash())
-
-const activities = ref(generateActivities())
-
-const timelineItems = ref(generateTimelineItems(activities.value))
-
-const timeline = ref()
-
-const activitySelectOptions = computed(() => generateActivitySelectOptions(activities.value))
-
-function goTo(page) {
-  if (currentPage.value === PAGE_TIMELINE && page === PAGE_TIMELINE) {
-    timeline.value.scrollToHour()
-  }
-  if (page !== PAGE_TIMELINE) {
-    document.body.scrollIntoView()
-  }
-  currentPage.value = page
-}
-function deleteActivity(activity) {
-  timelineItems.value.forEach((timelineItem) => {
-    if (timelineItem.activityId === activity.id) {
-      timelineItem.activityId = null
-      timelineItem.activitySeconds = 0
-    }
-  })
-  activities.value.splice(activities.value.indexOf(activity), 1)
-}
-function setTimelineItemActivity(timelineItem, activityId) {
-  timelineItem.activityId = activityId
-}
-function createActivity(activity) {
-  activities.value.push(activity)
-}
-function updateTimelineItemActivitySeconds(timelineItem, activitySeconds) {
-  timelineItem.activitySeconds += activitySeconds
-}
-function setActivitySecondsToComplete(activity, secondsToComplete) {
-  activity.secondsToComplete = secondsToComplete
-}
-
-provide('updateTimelineItemActivitySeconds', updateTimelineItemActivitySeconds)
-provide('periodSelectOptions', generatePeriodSelectOptions())
-provide('setTimelineItemActivity', setTimelineItemActivity)
-provide('activitySelectOptions', activitySelectOptions.value)
-provide('timelineItems', timelineItems.value)
+provide(keys.updateTimelineItemActivitySecondsKey, updateTimelineItemActivitySeconds)
+provide(keys.setActivitySecondsToCompleteKey, setActivitySecondsToComplete)
+provide(keys.setTimelineItemActivityKey, setTimelineItemActivity)
+provide(keys.createActivityKey, createActivity)
+provide(keys.deleteActivityKey, (activity) => {
+  resetTimelineItemActivities(activity)
+  deleteActivity(activity)
+})
+provide(keys.activitySelectOptionsKey, readonly(activitySelectOptions))
+provide(keys.periodSelectOptionsKey, readonly(generatePeriodSelectOptions()))
 </script>
 
 <template>
-  <TheHeader @navigate="goTo($event)" />
+  <TheHeader />
 
   <main class="flex flex-grow flex-col">
-    <TheTimeline
-      v-show="currentPage === PAGE_TIMELINE"
-      :timeline-items="timelineItems"
-      :current-page="currentPage"
-      ref="timeline"
-      @set-timeline-item-activity="setTimelineItemActivity"
-    />
-    <TheActivities
-      v-show="currentPage === PAGE_ACTIVITIES"
-      :activities="activities"
-      @delete-activity="deleteActivity"
-      @create-activity="createActivity"
-    />
+    <TheTimeline v-show="currentPage === PAGE_TIMELINE" ref="timelineRef" />
+    <TheActivities v-show="currentPage === PAGE_ACTIVITIES" />
     <TheProgress v-show="currentPage === PAGE_PROGRESS" />
   </main>
 
-  <TheNav :current-page="currentPage" @navigate="goTo($event)" />
+  <TheNav />
 </template>
 
 <style scoped></style>
